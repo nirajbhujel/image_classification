@@ -29,4 +29,5 @@ logs/
 # dirs
 old_model/
 docs/
+hydra_log/
 

@@ -140,10 +140,10 @@ class RandAugment(torch.nn.Module):
             "Color": (torch.linspace(0.0, 0.9, num_bins), True),
             "Contrast": (torch.linspace(0.0, 0.9, num_bins), True),
             "Sharpness": (torch.linspace(0.0, 0.9, num_bins), True),
-            "Posterize": (8 - (torch.arange(num_bins) / ((num_bins - 1) / 4)).round().int(), False),
-            "Solarize": (torch.linspace(255.0, 0.0, num_bins), False),
-            "AutoContrast": (torch.tensor(0.0), False),
-            "Equalize": (torch.tensor(0.0), False),
+            # "Posterize": (8 - (torch.arange(num_bins) / ((num_bins - 1) / 4)).round().int(), False),
+            # "Solarize": (torch.linspace(255.0, 0.0, num_bins), False),
+            # "AutoContrast": (torch.tensor(0.0), False),
+            # "Equalize": (torch.tensor(0.0), False),
         }
 
     def forward(self, img: Tensor) -> Tensor:

@@ -112,17 +112,11 @@ hydra:
     hydra:
     - hydra.mode=RUN
     task:
-    - exp.session=1
-    - exp.seed=0
-    - train.batch_size=64
-    - optim.lr=0.001
-    - exp.name=exp1
-    - net.type=cnn
-    - data.aug_crop=0.5
+    - data.aug_rand=0.5
   job:
     name: train
     chdir: null
-    override_dirname: data.aug_crop=0.5,exp.name=exp1,exp.seed=0,exp.session=1,net.type=cnn,optim.lr=0.001,train.batch_size=64
+    override_dirname: data.aug_rand=0.5
     id: ???
     num: ???
     config_name: base

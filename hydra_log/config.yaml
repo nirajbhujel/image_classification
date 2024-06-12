@@ -6,7 +6,7 @@ data:
   img_height: 492
   img_width: 656
   n_channels: 1
-  aug_rand: 0.0
+  aug_rand: 0.5
   aug_crop: 0.5
   data_dir: ../data/near_field
   datasets:
@@ -24,7 +24,7 @@ loss:
     weight: 0.0
     learn_weight: false
 optim:
-  lr: 0.001
+  lr: 0.0003
   lr_min: 1.0e-06
   lr_scheduler: reduceonplateau
   warmup_epochs: 0
@@ -55,9 +55,9 @@ train:
   network_in: null
 exp:
   session: 1
-  name: exp1
+  name: exp
   log_dir: null
   ckpt_dir: null
   summary_dir: null
-  seed: 0
+  seed: null
   debug: false
