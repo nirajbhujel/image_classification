@@ -1,0 +1,93 @@
+
+seeds: 
+    - 3061994
+
+task: 'classification' # ['classification', 'detection', 'clustering']
+num_classes: 2
+
+# data
+data:
+    img_height: 492
+    img_width: 656
+    n_channels: 1
+
+    # augmentation
+    aug_rand: 0.0
+    aug_crop: 0.5
+    
+    # data dir
+    data_dir: "../data/near_field"
+    datasets: ['Grating_A6']
+    
+    # train/val split
+    val_split: 0.4
+
+net:
+    name: 'basic_cnn'
+    hidden_dim: 512
+    out_dim: 512
+
+# loss 
+loss:
+    bce_loss:
+        weight: 1.0
+        learn_weight: False
+    mse_loss:
+        weight: 0.0
+        learn_weight: False
+
+# Optimizer
+optim:
+    lr: 0.0003
+    lr_min: 0.000001
+    lr_scheduler: 'reduceonplateau'
+    warmup_epochs: 0
+    lr_patience: 10
+    lr_reduce_factor: 0.9
+    lr_adjust: False
+    lr_adjust_rule: ''
+    weight_decay: 0
+    weight_decay_end: 1.0
+    clip_grad: 0
+
+# dataloader
+train:
+    epochs: 100
+    batch_size: 64
+    num_workers: 0
+    
+    gpu: 0
+    ddp: False
+    dist_run: False
+    
+    resume_training: False
+    single_batch: False
+    
+    early_stop_metric: 'val/acc' 
+    early_stop_patience: 5
+
+    eval_interval: 10
+    log_interval: 100
+
+    eval_metric: 'val/acc'
+    
+    train_skip_frames: 1
+    test_skip_frames: 1
+
+    reset_head_steps: ~
+    network_in: ~
+
+# experiments
+exp:
+    session: 1
+    exp_name: 'exp'
+    log_dir: ~
+    ckpt_dir: ~
+    summary_dir: ~
+    seed: ~
+    debug: False
+
+hydra:  
+  output_subdir: "../hydra_log/"  
+  run:  
+    dir: .

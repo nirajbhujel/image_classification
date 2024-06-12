@@ -1,0 +1,29 @@
+# Data
+.data/
+data/
+
+# jupyter notebook checkpoints
+.ipynb_checkpoints
+.notebooks
+
+
+# results figure folder
+result_fig/
+results/
+.results/
+.figures
+
+__pycache__
+*.csv
+rough*
+*pyc
+
+# saved model
+*.pth
+
+# dirs
+old_model/
+docs/
+hydra_log/
+logs/
+

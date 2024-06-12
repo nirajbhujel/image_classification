@@ -1,0 +1,16 @@
+network: 'cnn' 
+
+# training
+batch_size: 16
+num_workers: 16
+
+# augmentation
+aug_prob: 1
+aug_rot: 10.0
+aug_scale: 1.5
+aug_erase: 0.0
+
+# overwrite the default configs
+defaults:
+  - base
+  - _self_
