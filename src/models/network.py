@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.cnn import PointCNN, BasicCNN
+from models.cnn import CNN
 from models.fpn import FPN
 from models.modules import MLP, DetectionHead, ClusterHead
 
@@ -20,14 +20,14 @@ class Network(nn.Module):
         self.cfg = cfg
 
         # Create backbone        
-        if cfg.net.name=='basic_cnn':
-            self.net = BasicCNN(1, cfg.net.hidden_dim)
-        elif cfg.net.name=='point_cnn':
+        if cfg.net.type=='cnn':
+            self.net = CNN(1, cfg.net.hidden_dim)
+        elif cfg.net.type=='point_cnn':
             self.net = PointCNN(1, cfg.net.hidden_dim)
-        elif cfg.net.name=='fpn':
+        elif cfg.net.type=='fpn':
             self.net = FPN(1, cfg.net.hidden_dim, cfg.net.hidden_dim)
         else:
-            raise Exception(f"Network type {cfg.net.name} not supported!!" )
+            raise Exception(f"Network type {cfg.net.type} not supported!!" )
 
         # Create heads
         if cfg.task=='classification':

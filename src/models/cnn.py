@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class BasicCNN(nn.Module):
+class CNN(nn.Module):
     """
     CNN encoder, used to extract point features from the input images.
     """

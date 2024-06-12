@@ -64,8 +64,8 @@ def run(local_rank, world_size, cfg):
         ddp_setup(local_rank, world_size)
         print(f"DDP initialized for rank {local_rank}/{world_size}: ", torch.distributed.is_initialized())
     
-    exp_name = "_".join([cfg.exp.exp_name,  
-                         cfg.net.name,
+    exp_name = "_".join([cfg.exp.name,  
+                         cfg.net.type,
                          f"s{cfg.exp.seed}",
                          f"l{cfg.optim.lr:.4f}",
                          f"e{cfg.train.epochs}",

@@ -21,9 +21,12 @@ rough*
 # saved model
 *.pth
 
+# logs
+log/
+logs/
+*.log
+
 # dirs
 old_model/
 docs/
-hydra_log/
-logs/
 

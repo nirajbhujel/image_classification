@@ -23,7 +23,7 @@ data:
     val_split: 0.4
 
 net:
-    name: 'basic_cnn'
+    type: 'cnn'
     hidden_dim: 512
     out_dim: 512
 
@@ -80,7 +80,7 @@ train:
 # experiments
 exp:
     session: 1
-    exp_name: 'exp'
+    name: 'exp'
     log_dir: ~
     ckpt_dir: ~
     summary_dir: ~

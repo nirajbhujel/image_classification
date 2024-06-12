@@ -1,0 +1,63 @@
+seeds:
+- 3061994
+task: classification
+num_classes: 2
+data:
+  img_height: 492
+  img_width: 656
+  n_channels: 1
+  aug_rand: 0.0
+  aug_crop: 0.5
+  data_dir: ../data/near_field
+  datasets:
+  - Grating_A6
+  val_split: 0.4
+net:
+  type: cnn
+  hidden_dim: 512
+  out_dim: 512
+loss:
+  bce_loss:
+    weight: 1.0
+    learn_weight: false
+  mse_loss:
+    weight: 0.0
+    learn_weight: false
+optim:
+  lr: 0.001
+  lr_min: 1.0e-06
+  lr_scheduler: reduceonplateau
+  warmup_epochs: 0
+  lr_patience: 10
+  lr_reduce_factor: 0.9
+  lr_adjust: false
+  lr_adjust_rule: ''
+  weight_decay: 0
+  weight_decay_end: 1.0
+  clip_grad: 0
+train:
+  epochs: 100
+  batch_size: 64
+  num_workers: 0
+  gpu: 0
+  ddp: false
+  dist_run: false
+  resume_training: false
+  single_batch: false
+  early_stop_metric: val/acc
+  early_stop_patience: 5
+  eval_interval: 10
+  log_interval: 100
+  eval_metric: val/acc
+  train_skip_frames: 1
+  test_skip_frames: 1
+  reset_head_steps: null
+  network_in: null
+exp:
+  session: 1
+  name: exp1
+  log_dir: null
+  ckpt_dir: null
+  summary_dir: null
+  seed: 0
+  debug: false

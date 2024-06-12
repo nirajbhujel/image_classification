@@ -1,0 +1,7 @@
+- exp.session=1
+- exp.seed=0
+- train.batch_size=64
+- optim.lr=0.001
+- exp.name=exp1
+- net.type=cnn
+- data.aug_crop=0.5
