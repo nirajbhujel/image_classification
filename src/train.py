@@ -95,14 +95,13 @@ def run(local_rank, world_size, cfg):
     trainer = Trainer(cfg, local_rank, world_size)
     
     if local_rank==0:        
-        trainer.train_logger.info(f"Running Experiment: {exp_name}")
-        trainer.train_logger.info(trainer.network)
-        trainer.train_logger.info(f"Training parameters: {model_parameters(trainer.network)} (backbone:{model_parameters(trainer.network.net)},  heads: {model_parameters(trainer.network.head)})")
+        trainer.logger.info(f"Running Experiment: {exp_name}")
+        trainer.logger.info(trainer.network)
+        trainer.logger.info(f"Training parameters: {model_parameters(trainer.network)} (backbone:{model_parameters(trainer.network.net)},  heads: {model_parameters(trainer.network.head)})")
         
 
     trainer.train()
-    trainer.train_logger.info('DONE!!\n')
-    trainer.train_logger.close()
+    trainer.logger.info('DONE!!\n')
                 
     if cfg.train.ddp:
         destroy_process_group()

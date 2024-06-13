@@ -55,8 +55,6 @@ class MetricLogger:
         stats["min"] = np.min(metric).round(3)
         stats["max"] = np.max(metric).round(3)
         stats["mean"] = np.mean(metric).round(3)
-        # stats["med"] = np.median(metric).round(3)
-        # stats["rmse"] = np.sqrt(np.mean(np.square(metric))).round(3)
 
         return stats
    
@@ -69,7 +67,6 @@ class MetricLogger:
         self.stats = self.compute_metric_stats(self.accuracy)
         
         self.table = self.tabulate_data()
-        print(self.table)
                                                
                                                
     def tabulate_data(self, tablefmt='simple'):

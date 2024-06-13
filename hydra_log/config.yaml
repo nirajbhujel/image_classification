@@ -6,8 +6,8 @@ data:
   img_height: 492
   img_width: 656
   n_channels: 1
-  aug_rand: 0.5
-  aug_crop: 0.5
+  aug_photo: 0.5
+  aug_geome: 0.0
   data_dir: ../data/near_field
   datasets:
   - Grating_A6
@@ -54,8 +54,8 @@ train:
   reset_head_steps: null
   network_in: null
 exp:
-  session: 1
   name: exp
+  session: 1
   log_dir: null
   ckpt_dir: null
   summary_dir: null

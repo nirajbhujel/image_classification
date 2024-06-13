@@ -155,26 +155,28 @@ def get_transforms(cfg, phase):
     else:
         normalize = T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
-    image_transform = [
-                        # T.Resize((cfg.img_height, cfg.img_width), TF.InterpolationMode.NEAREST),
+    image_transform = T.Compose([
+                        T.Resize((cfg.img_height, cfg.img_width), TF.InterpolationMode.NEAREST),
                         T.ToTensor(),
                         normalize,
-                        ]
+                        ])
     if phase=="train":
-        geometric_transforms = [
-                    #T.CenterCrop((cfg.img_height, cfg.img_width)),
-                    T.RandomApply([T.RandomResizedCrop(size=(cfg.img_height, cfg.img_width), scale=(0.8, 1.0))], cfg.aug_crop)
-                    ]
+        geometric_transforms = T.Compose([
+            T.RandomApply([
+                        # T.CenterCrop((cfg.img_height, cfg.img_width)),
+                        T.RandomResizedCrop(size=(cfg.img_height, cfg.img_width), scale=(0.8, 1.0)),
+                        T.RandomRotation(10),
+                        T.RandomHorizontalFlip(p=0.5),
+                        ], cfg.aug_geome)
+            ])
 
-        photometric_transforms = [
-                    # T.RandomApply([T.GaussianBlur((5, 5))], cfg.aug_photo), # applying blur reduces convergences
-                    # T.RandomApply([T.ColorJitter(brightness=.1, contrast=.1)], cfg.aug_photo), # saturation=.1, hue=.1)
-                    T.RandomApply([RandAugment(num_ops=2, magnitude=9)], cfg.aug_rand), # https://arxiv.org/pdf/2106.10270.pdf
-                    ]
+        photometric_transforms = T.Compose([
+            T.RandomApply([RandAugment(num_ops=2, magnitude=9)], cfg.aug_photo)
+            ])
         
-        return T.Compose(image_transform + geometric_transforms + photometric_transforms)
+        return T.Compose([image_transform, geometric_transforms, photometric_transforms])
     
     else:
-        return T.Compose(image_transform)
+        return image_transform
 
     

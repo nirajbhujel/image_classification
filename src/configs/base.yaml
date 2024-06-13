@@ -12,9 +12,9 @@ data:
     n_channels: 1
 
     # augmentation
-    aug_rand: 0.0
-    aug_crop: 0.5
-    
+    aug_photo: 0.5
+    aug_geome: 0.0
+
     # data dir
     data_dir: "../data/near_field"
     datasets: ['Grating_A6']
@@ -79,8 +79,8 @@ train:
 
 # experiments
 exp:
-    session: 1
     name: 'exp'
+    session: 1
     log_dir: ~
     ckpt_dir: ~
     summary_dir: ~

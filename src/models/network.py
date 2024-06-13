@@ -31,7 +31,7 @@ class Network(nn.Module):
 
         # Create heads
         if cfg.task=='classification':
-            self.head = MLP(cfg.net.hidden_dim, cfg.net.hidden_dim, cfg.num_classes)
+            self.head = MLP(cfg.net.hidden_dim, cfg.net.hidden_dim//4, cfg.num_classes)
         elif cfg.task=='detection':
             self.head = DetectionHead(cfg.net.hidden_dim, cfg.net.hidden_dim, cfg.num_classes)
         elif cfg.task == 'clustering':

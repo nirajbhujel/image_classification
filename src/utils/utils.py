@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
+from omegaconf import OmegaConf, DictConfig, ListConfig
 
 import torch
 import torch.nn as nn
@@ -137,3 +138,21 @@ def non_contributing_params(model, outputs=[]):
     return sum([np.product(list(p.shape)) for p in non_contributing_parameters])
 
 
+def dictconf_to_dict(config, prefix=None, cfg_dict={}):
+    """
+    Recursively get fields in config and convert to primitive dictionary.
+    """
+    for key, value in config.items():
+        k = f"{prefix}.{key}" if prefix else key
+        # print(k, value, type(value))
+        if isinstance(value, DictConfig):
+            cfg_dict[k] = dictconf_to_dict(value, prefix=k, cfg_dict=cfg_dict)
+        elif isinstance(value, ListConfig):
+            cfg_dict[k] = ','.join([str(v) for v in value]) 
+        else:
+            cfg_dict[k] = value
+    
+    # remove field with value '{...}'
+    cfg_dict = {k:v for k, v in cfg_dict.items() if not isinstance(v, dict)}
+
+    return cfg_dict

@@ -19,16 +19,44 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from collections import defaultdict
 
-def create_figure(nrows=1, ncols=1, figwidth=8, figsize=None, xlabel='', ylabel='', title='', axis_off=False, dpi=100):
-    
+def create_figure(nrows=1, ncols=1, figsize=None, subplot_size=None, figwidth=8, xlabel='', ylabel='',
+    title='', axis_off=True, dpi=100, layout='constrained'):
+    '''
+    Parameters
+        nrows (int, optional): Number of rows of subplots. Default is 1.
+        ncols (int, optional): Number of columns of subplots. Default is 1.
+        figwidth (int, optional): Total width of the figure in inches. Default is 8.
+        figsize (tuple, optional): Custom size of the figure (width, height). Overrides figwidth and subplot_size if provided.
+        subplot_size (tuple, optional): Size of each subplot (width, height) in inches. Default is (4, 4).
+        xlabel (str, optional): Label for the x-axis of each subplot. Default is an empty string.
+        ylabel (str, optional): Label for the y-axis of each subplot. Default is an empty string.
+        title (str, optional): Title of the figure. Default is an empty string.
+        axis_off (bool, optional): If True, turns off the axis for each subplot. Default is False.
+        dpi (int, optional): Dots per inch for the figure resolution. Default is 100.
+    Returns
+    fig (Figure): The created Matplotlib figure.
+    axs (Axes or array of Axes): The created subplots' axes.
+    '''
     if figsize is None:
-        figsize = (figwidth, nrows/ncols*figwidth)
+        # Calculate the total figure size
+        if subplot_size is not None:
+            figsize = (ncols * subplot_size[0], nrows * subplot_size[1])  # subplot size in inches
+        else:
+            figsize = (figwidth, nrows/ncols*figwidth)
         
     fig, axes = plt.subplots(nrows, ncols, figsize=figsize, dpi=dpi)
-    
+
+    # make it two dimensional
+    if ncols==1 or nrows==1:
+        axes = axes.reshape(nrows, ncols)
+
     if axis_off:
-        for ax in np.reshape(axes, (-1,)):
-            ax.set_axis_off()
+        for ax in axes.flatten():
+            ax.xaxis.set_major_formatter(plt.NullFormatter())
+            ax.yaxis.set_major_formatter(plt.NullFormatter())
+
+            ax.set_xticks([])
+            ax.set_yticks([])
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)

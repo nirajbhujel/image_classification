@@ -111,12 +111,11 @@ hydra:
   overrides:
     hydra:
     - hydra.mode=RUN
-    task:
-    - data.aug_rand=0.5
+    task: []
   job:
     name: train
     chdir: null
-    override_dirname: data.aug_rand=0.5
+    override_dirname: ''
     id: ???
     num: ???
     config_name: base
