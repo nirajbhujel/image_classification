@@ -13,22 +13,24 @@ class MLP(nn.Module):
     Simple MLP network with dropout.
     """
 
-    def __init__(self, in_channels=512, hidden_channels=512, out_channels=2, act_layer=nn.ReLU, dropout=0.0, bias=True):
+    def __init__(self, in_channels=512, out_channels=2, act_layer=nn.ReLU, dropout=0.0, bias=True):
         super().__init__()
 
         self.flat = nn.Flatten(start_dim=1)
-        self.fc1 = nn.Linear(in_channels, hidden_channels, bias=bias)
         self.act = act_layer()
         self.drop = nn.Dropout(dropout)
-        self.fc2 = nn.Linear(hidden_channels, out_channels, bias=bias)
+        
+        self.fc1 = nn.Linear(in_channels, in_channels//2, bias=bias)
+        self.fc2 = nn.Linear(in_channels//2, in_channels//4, bias=bias)
+        self.fc3 = nn.Linear(in_channels//4, out_channels, bias=bias)
 
     def forward(self, x):
+        
         x = self.flat(x)
-        x = self.fc1(x)
-        x = self.act(x) 
-        x = self.drop(x)
-        x = self.fc2(x)
-
+        x = self.drop(self.act(self.fc1(x)))
+        x = self.drop(self.act(self.fc2(x)))
+        x = self.fc3(x)
+        
         return x
 
 class DetectionHead(nn.Module):

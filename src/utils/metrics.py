@@ -6,85 +6,103 @@ from tabulate import tabulate
 
 import torch
 
+def _binary_stat_scores(preds, target):
+    """Compute the statistics. Follow torchmetrics.classification.stat_scores.py"""
+    tp = ((target == preds) & (target == 1)).sum()
+    fn = ((target != preds) & (target == 1)).sum()
+    fp = ((target != preds) & (target == 0)).sum()
+    tn = ((target == preds) & (target == 0)).sum()
+    return tp, fp, tn, fn
+
 def binary_accuracy(y_true, y_pred, threshold=0.5):
         
     y_pred = (y_pred>0.5).to(y_true.dtype)
-    acc = torch.mean((y_pred==y_true).to(y_true.dtype), dim=-1)
 
-    return acc
-
+    return torch.mean((y_pred==y_true).to(y_true.dtype), dim=-1)
+    
 
 class MetricLogger:
-    def __init__(self, name="binary_accuracy", sample_weight=None, reduction='mean'):
+    def __init__(self, name="binary_accuracy"):
         
         self.name = name
-        self.sample_weight = sample_weight
-        self.reduction = reduction
         
+        self.reset()
+    
+    def __len__(self, ):
+        return self.count
+    
+    def reset(self, ):
         self.count = 0
-        self.accuracy = []
+        self.hist = []
         
         self.stats = {}
         self.table = ''
-    
-    def __len__(self, ):
-        return len(self.gt_poses)
-    
-    def update(self, y_true, y_pred):
-        
-        if self.name=='binary_accuracy':
-            acc = binary_accuracy(y_true, y_pred)
 
-        if self.sample_weight is not None:
-            acc = self.sample_weight * acc
+        self._reset_state()
 
-        if self.reduction=='sum':
-            acc_red = torch.sum(acc)
-        else:
-            acc_red = torch.mean(acc)
+    def _reset_state(self, ):
+        self.tp = 0
+        self.fp = 0
+        self.tn = 0
+        self.fn = 0
+
+    def _update_state(self, tp, fp, tn, fn):
+        self.tp += tp
+        self.fp += fp 
+        self.tn += tn  
+        self.fn += fn
+
+    def update(self, y_pred, y_true):
         
-        self.accuracy.append(acc_red)
         self.count += 1
 
-        return acc_red
+        if self.name=='binary_accuracy':
+            y_pred = (y_pred>0.5).to(y_true.dtype)
 
-    def compute_metric_stats(self, metric):
+            tp, fp, tn, fn = _binary_stat_scores(y_pred, y_true)
+            
+            self._update_state(tp, fp, tn, fn)
+
+        acc = (tp + tn) / (tp + tn + fp + fn)
+
+        return acc
+
+    def _compute_stats(self, ):
         
         stats = {}
-        
-        stats["min"] = np.min(metric).round(3)
-        stats["max"] = np.max(metric).round(3)
-        stats["mean"] = np.mean(metric).round(3)
+
+        stats['tp'] = self.tp.item()
+        stats['fp'] = self.fp.item()
+        stats['tn'] = self.tn.item()
+        stats['fn'] = self.fn.item()
+        stats['accuracy'] = (self.tp + self.tn) / (self.tp + self.fp + self.tn + self.fn)
+        stats['precision'] = self.tp / (self.tp + self.fn)
 
         return stats
    
     
-    def compute(self, ):
+    def compute(self, verbose=0):
 
         if not len(self)>0:
             raise Exception("Nothing to compute. Please update metrics first")
             
-        self.stats = self.compute_metric_stats(self.accuracy)
+        self.results = self._compute_stats()
         
-        self.table = self.tabulate_data()
+        print(self.tabulate_data(self.results))                                       
                                                
-                                               
-    def tabulate_data(self, tablefmt='simple'):
+    def tabulate_data(self, results, tablefmt='simple'):
             
-        headers = ["Metric", "Min", "Max", "Mean"]
+        headers = ["Metric"] + list(results.keys())
         
         data = []
-        name_row = [''] * len(headers)
-        name_row[0] = self.name
-        data.append(name_row)
-        
-        # add a hline
-        data.append(['-------'] * len(headers))
         
         # metric row
-        row = [f"{e}"] + [f"{v:.3f}" for k, v in self.stats.items()]
+        row = [self.name] + [f"{v:.2f}" for k, v in results.items()]
         data.append(row)
-            
+        
+        # add bottom hline
+        data.append(['-------'] * len(headers))
+        
         tabular_data = tabulate(data, headers=headers, tablefmt=tablefmt)
 
         return tabular_data

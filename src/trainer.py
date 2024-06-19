@@ -41,7 +41,7 @@ class Trainer:
 
         self.log_dir = cfg.exp.log_dir
         self.ckpt_dir = cfg.exp.ckpt_dir
-        self.debug = cfg.exp.debug
+        self.debug = cfg.train.debug
         
         self.logger = logger.create_logger(cfg.exp.log_dir + "/train_log.txt")
         
@@ -79,7 +79,7 @@ class Trainer:
                                         num_workers=cfg.train.num_workers,
                                         worker_init_fn=seed_worker, # for reproducibility in multi-process
                                         generator=torch_generator(cfg.exp.seed),
-                                        pin_memory=True,
+                                        pin_memory=False, # pin_memory is slightly faster but consume high cpu resource
                                         sampler=DistributedSampler(self.train_dataset) if cfg.train.ddp else None,
                                         persistent_workers=True if cfg.train.num_workers>0 else False,
                                         drop_last=False
@@ -90,6 +90,7 @@ class Trainer:
                                         shuffle=False,
                                         num_workers=cfg.train.num_workers,
                                         persistent_workers=True if cfg.train.num_workers>0 else False,
+                                        drop_last=True
                                         )
 
         self.logger.info(f"Train samples: {len(self.train_dataset)}, BatchSize: {self.train_loader.batch_size}, Batches: {len(self.train_loader)}")
@@ -105,7 +106,7 @@ class Trainer:
         self.network_ddp = self.network
         self.logger.info(f"Training parameters: {self.network.num_params}")
 
-        if not cfg.exp.debug:
+        if not cfg.train.debug:
             self.tb_logger.add_scalar("parameters", self.network.num_params)
             
         # Setup MTL
@@ -172,7 +173,8 @@ class Trainer:
         cfg = self.cfg
         train_hist = defaultdict(list)
         last_epoch = 0
-
+        start = time.time()
+        
         if cfg.train.ddp:
             if has_batchnorms(self.network):
                 self.network = nn.SyncBatchNorm.convert_sync_batchnorm(self.network)
@@ -201,7 +203,7 @@ class Trainer:
             except Exception as e:
                 print(e)
 
-        self.logger.info(f"Training Started, Rank: {self.rank} ")
+        self.logger.info(f"Training Started (device: {self.device}, rank: {self.rank})")
         
         for epoch in range(last_epoch, cfg.train.epochs):
 
@@ -243,6 +245,7 @@ class Trainer:
                 log_text += f", used/total:{(total_mem-free_mem)/1024**2:.0f}/{total_mem/1024**2:.0f} Mib"
                 self.logger.info(f"epoch: {epoch}, step:{self.global_step}, {log_text}")
                 
+                # Check for nan values
                 for k, v in hist.items():
                     if np.any(np.isnan(v)):
                         self.logger.exception(f"{k} has nan values")
@@ -278,8 +281,9 @@ class Trainer:
                 row_header.append(k)
                 row_data.append(v[-1] if v[-1]//1==0 else np.round(v[-1], 2))
                 
-            save_to_csv(f"../logs/log_results_session{cfg.exp.session}.csv", row_data, header=row_header)
-    
+            save_to_csv(f"../logs/log_results_session{cfg.train.session}.csv", row_data, header=row_header)
+            
+            self.logger.info(f"DONE in {time.time()-start}!!")
             self.tb_logger.flush()
             self.tb_logger.close
 
@@ -378,7 +382,7 @@ class Trainer:
         hist['train/loss'].append(loss.detach().item())
 
         if (self.global_step%self.log_hist_freq==0) and (self.rank==0) and (not self.debug):
-            self.log_output_image(dict(images=imgs, labels=labels, preds=preds), phase='train')
+            self.log_output_image(dict(images=imgs, labels=labels, preds=preds), cfg.train.n_images, phase='train')
 
         return hist, loss
 
@@ -390,6 +394,8 @@ class Trainer:
 
         if hist is None:
             hist = defaultdict(list)
+
+        self.metric_logger.reset()
 
         pbar = tqdm(total=len(self.test_loader), position=0)
         with torch.no_grad():
@@ -404,14 +410,14 @@ class Trainer:
                 preds = self.network(imgs)
                 preds = F.softmax(preds, dim=-1)
 
-                acc = self.metric_logger.update(labels, preds)
-                hist[cfg.train.eval_metric].append(acc.item())
+                acc = self.metric_logger.update(preds, labels)
+                hist[cfg.train.eval_metric].append(acc.detach().item())
 
                 string = f"mean_accuracy:{np.mean(hist[cfg.train.eval_metric]):.3f}"
+                pbar.set_postfix_str(string)
 
-        
         if (self.global_step%self.log_hist_freq==0) and (not self.debug):
-            self.log_output_image(dict(images=imgs, labels=labels, preds=preds), phase='val')
+            self.log_output_image(dict(images=imgs, labels=labels, preds=preds), cfg.train.n_images, phase='val')
 
         return hist
 
@@ -419,24 +425,27 @@ class Trainer:
         pass
 
             
-    def log_output_image(self, outputs, n_images=10, phase="train", dpi=100, fontsize=10):
+    def log_output_image(self, outputs, n_images=5, phase="train", dpi=100, fontsize=10):
 
         B, C, H, W = outputs['images'].shape # (492, 656)
         # print(B, C, H, W)
 
-        num_rows = 1
-        num_cols = min(n_images, B)
+        n_images = min(n_images, B)
+
+        num_cols = 5
+
+        num_rows = n_images//num_cols
+        
         fig, axes = create_figure(num_rows, num_cols, subplot_size=(2, W/H*2))
 
-        for i in range(num_cols):
-            axes[0, i].imshow(prep_for_plot(outputs['images'][i], unnormalize=True))
-            axes[0, i].set_title(f"label:{outputs['labels'][i].argmax().item()}, pred:{outputs['preds'][i].argmax().item()}", fontsize=fontsize)
+        axes = axes.flatten()
+        for i in np.arange(n_images):
+            axes[i].imshow(prep_for_plot(outputs['images'][i], unnormalize=True))
+            axes[i].set_title(f"label:{outputs['labels'][i].argmax().item()}, pred:{outputs['preds'][i].argmax().item()}", fontsize=fontsize)
             # add color boundary around the image
-            for spine in axes[0, i].spines.values():
+            for spine in axes[i].spines.values():
                 spine.set_edgecolor('green' if outputs['labels'][i].argmax().item()==outputs['preds'][i].argmax().item() else 'red')
                 spine.set_linewidth(2) 
-
-        axes[0, 0].set_ylabel("Image", fontsize=fontsize)
 
         add_plot(self.tb_logger, f"{phase}/output_images", self.global_step)
 

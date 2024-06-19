@@ -46,17 +46,22 @@ def create_figure(nrows=1, ncols=1, figsize=None, subplot_size=None, figwidth=8,
         
     fig, axes = plt.subplots(nrows, ncols, figsize=figsize, dpi=dpi)
 
-    # make it two dimensional
-    if ncols==1 or nrows==1:
-        axes = axes.reshape(nrows, ncols)
+    # make it two dimensional (but if nrows=1, ncols=1, cannot reshape)
+    if ncols==1 and nrows>1:
+        axes = axes.reshape(nrows, 1)
+    if nrows==1 and ncols>1:
+        axes = axes.reshape(1, ncols)
 
     if axis_off:
-        for ax in axes.flatten():
-            ax.xaxis.set_major_formatter(plt.NullFormatter())
-            ax.yaxis.set_major_formatter(plt.NullFormatter())
-
-            ax.set_xticks([])
-            ax.set_yticks([])
+        try:
+            for ax in axes.flatten():
+                ax.xaxis.set_major_formatter(plt.NullFormatter())
+                ax.yaxis.set_major_formatter(plt.NullFormatter())
+    
+                ax.set_xticks([])
+                ax.set_yticks([])
+        except Exception as e:
+            print(e)
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)

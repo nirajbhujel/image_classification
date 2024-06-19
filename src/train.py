@@ -14,7 +14,6 @@ import pickle
 import math
 import shutil
 import hydra
-import argparse
 import logging
 import traceback
 
@@ -64,18 +63,19 @@ def run(local_rank, world_size, cfg):
         ddp_setup(local_rank, world_size)
         print(f"DDP initialized for rank {local_rank}/{world_size}: ", torch.distributed.is_initialized())
     
-    exp_name = "_".join([cfg.exp.name,  
+    exp_name = "_".join([cfg.exp.name,
                          cfg.net.type,
-                         f"s{cfg.exp.seed}",
-                         f"l{cfg.optim.lr:.4f}",
+                         '_'.join(cfg.data.datasets),
+                         f"seed{cfg.exp.seed}",
+                         f"lr{cfg.optim.lr:.4f}",
                          f"e{cfg.train.epochs}",
                          f"b{cfg.train.batch_size*world_size}",
                         ])
 
-    log_dir = f"../logs/session{cfg.exp.session:03d}/{exp_name}"
+    log_dir = f"../logs/session{cfg.train.session:03d}/{exp_name}"
     
     # Create log directories and backup src code
-    if not cfg.exp.debug:
+    if not cfg.train.debug:
         cfg.exp.log_dir = create_new_dir(log_dir)
         cfg.exp.ckpt_dir = create_new_dir(f"{log_dir}/checkpoints")
         cfg.exp.summary_dir = create_new_dir(f"{log_dir}/summary")
@@ -101,7 +101,6 @@ def run(local_rank, world_size, cfg):
         
 
     trainer.train()
-    trainer.logger.info('DONE!!\n')
                 
     if cfg.train.ddp:
         destroy_process_group()

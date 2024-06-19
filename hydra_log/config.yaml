@@ -2,18 +2,8 @@ seeds:
 - 3061994
 task: classification
 num_classes: 2
-data:
-  img_height: 492
-  img_width: 656
-  n_channels: 1
-  aug_photo: 0.5
-  aug_geome: 0.0
-  data_dir: ../data/near_field
-  datasets:
-  - Grating_A6
-  val_split: 0.4
 net:
-  type: cnn
+  type: PointCNN
   hidden_dim: 512
   out_dim: 512
 loss:
@@ -34,30 +24,45 @@ optim:
   lr_adjust_rule: ''
   weight_decay: 0
   weight_decay_end: 1.0
-  clip_grad: 0
+  clip_grad: 1.0
+data:
+  img_height: 480
+  img_width: 480
+  n_channels: 1
+  aug_photo: 0.0
+  aug_geome: 0.5
+  data_dir: ../data/near_field
+  datasets:
+  - Grating_A6
+  - Grating_SON1
+  - LASEROPTIK
+  - LASEROPTIK_SON1
+  val_split: 0.4
+  prefetch: 1
 train:
-  epochs: 100
+  session: 1
+  epochs: 500
   batch_size: 64
-  num_workers: 0
+  num_workers: 1
   gpu: 0
   ddp: false
   dist_run: false
   resume_training: false
   single_batch: false
+  debug: false
   early_stop_metric: val/acc
-  early_stop_patience: 5
+  early_stop_patience: 20
   eval_interval: 10
   log_interval: 100
+  n_images: 20
   eval_metric: val/acc
   train_skip_frames: 1
   test_skip_frames: 1
   reset_head_steps: null
   network_in: null
 exp:
-  name: exp
-  session: 1
-  log_dir: null
+  name: exp1
+  log_dir: ../logs
   ckpt_dir: null
   summary_dir: null
   seed: null
-  debug: false

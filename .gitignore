@@ -30,4 +30,4 @@ logs/
 old_model/
 docs/
 hydra_log/
-
+src/*.ipynb

@@ -56,9 +56,6 @@ def copy_src(root_src_dir, root_dst_dir, overwrite=True):
             else:
                 shutil.copy(src_file, dst_file)
 
-
-
-
 def reload_module_from_directory(module_name, directory, verbose=0):
     
     # try:
@@ -98,6 +95,10 @@ def remove_module_from_path(module_name):
     if "data.dataset" in sys.modules:
         del sys.modules["data.dataset"]    
 
+def save_file(file_path, data):
+    with open(file_path, 'w') as f:
+        f.write(data)
+
 def load_file(file_path):
     with open(file_path, 'r') as f:
         lines = f.readlines()
@@ -110,3 +111,9 @@ def create_new_dir(new_dir, clean=False):
     #if not os.path.exists(new_dir):
     os.makedirs(new_dir, exist_ok=True)
     return new_dir
+
+def listdir(dir_name, file_type=''):
+    files = os.listdir(dir_name)
+    if file_type is not None:
+        files = [f for f in files if f.endswith(file_type)]
+    return sorted(files)

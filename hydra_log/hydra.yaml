@@ -111,11 +111,14 @@ hydra:
   overrides:
     hydra:
     - hydra.mode=RUN
-    task: []
+    task:
+    - net.type=PointCNN
+    - train.batch_size=64
+    - data.prefetch=1
   job:
     name: train
     chdir: null
-    override_dirname: ''
+    override_dirname: data.prefetch=1,net.type=PointCNN,train.batch_size=64
     id: ???
     num: ???
     config_name: base
