@@ -6,19 +6,36 @@ Ensure the data is organized in the following structure:
 ```
 data
 └── near-field
-    └── Grating_A6
-        ├── images
-        │   ├── 01_01
-        │   │   └── burst01_shot001.png
-        │   │   └── ...
-        │   ├── 01_02
-        │   │   └── burst01_shot001.png
-        │   │   └── ...        
-        └── labels
-            └──Grating_A6
-                └── 01_02.txt
-                └── ...
-            ....
+    └──images
+    │   ├──Grating_A6
+    │   │   ├──01_01
+    │   │   │   └──burst01_shot001.png
+    │   │   │   └──...
+    │   │   ├──01_02
+    │   │   │   └──burst01_shot001.png
+    │   │   │   └──...
+    │   │   ├──...
+    │   ├──Grating_SON1
+    │   │   ├──01_01
+    │   │   │   └──burst01_shot001.png
+    │   │   │   └──...
+    │   │   ├──01_02
+    │   │   │   └──burst01_shot001.png
+    │   │   │   └──...
+    │   │   ├──....
+    │   ├──...
+    └──labels
+        ├──Grating_A6
+        │   └── 01_01.txt
+        │   └── 01_02.txt
+        │   └── ....
+        ├──Grating_SON1
+        │    └── 01_01.txt
+        │    └── 01_02.txt
+        │    └── .....
+        ├── ...
+        
+
 ```
 Each .txt file inside the labels should contain path to the image and the label, e.g. Grating_A6/01_02/burst01_shot001.png,0
 
@@ -40,13 +57,19 @@ pip install -r requirements.txt
 ```bash
 pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu118
 ```
+## Prepare dataset
+Navigate to the `src` directory and run the `preprocess.py` script. It will generate `.txt` file for each camera location of the dataset inside `labels` directory. It will also generate a `.html` file for the visualziation of the class labels. 
+
+```bash
+python datasets/preprocess.py
+```
 
 ## Run Training
 
 **Navigate to the src directory and run the training**:
 
 ```bash
-python train.py --config-name base exp.session=1 train.seed=0 train.batch_size=0 optim.lr=0.001 exp.name='exp1' net.name=cnn data.aug_crop=0.5
+python train.py --config-name base net.type=PointCNN exp.session=1 train.seed=42 train.batch_size=64 optim.lr=0.001 exp.name='exp1' data.aug_crop=0.5
 ```
 
 **Visualize the training progress in tensorboard**:

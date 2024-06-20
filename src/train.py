@@ -65,7 +65,6 @@ def run(local_rank, world_size, cfg):
     
     exp_name = "_".join([cfg.exp.name,
                          cfg.net.type,
-                         '_'.join(cfg.data.datasets),
                          f"seed{cfg.exp.seed}",
                          f"lr{cfg.optim.lr:.4f}",
                          f"e{cfg.train.epochs}",

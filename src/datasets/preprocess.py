@@ -76,6 +76,26 @@ FIRST_DAMAGED_SHOTS = {
     (6, 2): (1, 1),
     (6, 3): (1, 6),
     },
+'LASEROPTIK_10000': {
+    (1, 1): (None, None),
+    (1, 2): (None, None)
+    },
+'THALES_SESO_1000': {
+    (1, 1): (None, None),
+    (1, 2): (None, None),
+    },
+'THALES_SESO_A': {
+    (1, 1): (None, None),
+    (1, 2): (None, None),
+    (2, 1): (8, 3),
+    (2, 2): (7, 7),
+    (3, 1): (7, 72),
+    (3, 2): (7, 45), 
+    (4, 1): (7, 11),
+    (4, 2): (8, 3),
+    (5, 1): (8, 3),
+    (5, 2): (7, 67),
+    },
 }
 
 def create_labels(data_dir, dataset):

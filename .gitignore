@@ -1,3 +1,5 @@
+.gitignore
+
 # Data
 .data/
 data/
@@ -5,7 +7,7 @@ data/
 # jupyter notebook checkpoints
 .ipynb_checkpoints
 .notebooks
-
+.virtual_documents
 
 # results figure folder
 result_fig/
@@ -30,4 +32,3 @@ logs/
 old_model/
 docs/
 hydra_log/
-src/*.ipynb
