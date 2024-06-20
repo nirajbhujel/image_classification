@@ -236,7 +236,7 @@ def generate_html(data, data_dir, title='Images'):
 
                     # change color if prediction available
                     if 'pred' in item:
-                        color = 'red' if item['pred']!=item['label'] else color
+                        color = 'red' if item['pred']!=item['label'] else 'green'
                         caption += f', y={item['pred']} p={item['prob']:.2f}'
 
                     # Construct the figure element with image and captions
