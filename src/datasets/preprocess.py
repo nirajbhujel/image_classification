@@ -1,4 +1,5 @@
 import os
+import cv2
 import sys
 import re
 import random
@@ -10,6 +11,15 @@ if not root_path in sys.path:
 
 from utils.misc import load_file, save_file, listdir
 
+_DATASETS = [
+    'Grating_A6',
+    'Grating_SON1',
+    'LASEROPTIK_SON1', 
+    'THALES_SESO_10000',
+    'THALES_SESO_A',
+    'LASEROPTIK',
+    'LASEROPTIK_10000'
+    ]
 
 FIRST_DAMAGED_SHOTS = {
 'Grating_A6':{
@@ -97,6 +107,43 @@ FIRST_DAMAGED_SHOTS = {
     (5, 2): (7, 67),
     },
 }
+
+def process_raw_images(raw_data_dir, dest_data_dir, crop_area=None):
+    '''
+    Normalize raw images in range 0-255 and save as png. 
+    '''
+    img_means, img_stds = [], []
+    for dir_name in sorted(os.listdir(raw_data_dir)):
+        
+        print("Converting to PNG images", dir_name)
+        shutil.rmtree(f"{dest_data_dir}/{dir_name}", ignore_errors=True)
+        
+        for row in sorted(os.listdir(f"{root_dir}/{dir_name}")):
+            for col in sorted(os.listdir(f"{root_dir}/{dir_name}/{row}")):
+                
+                dest_img_dir = f"{dest_data_dir}/{dir_name}/{int(row[3]):02d}_{int(col[3]):02d}"
+                os.makedirs(dest_img_dir, exist_ok=True)
+                
+                for burst in sorted(os.listdir(f"{root_dir}/{dir_name}/{row}/{col}")):
+                    for shot in sorted(os.listdir(f"{root_dir}/{dir_name}/{row}/{col}/{burst}")):
+                        
+                        img = cv2.imread(f"{root_dir}/{dir_name}/{row}/{col}/{burst}/{shot}", cv2.IMREAD_UNCHANGED)
+                        img = (img-img.min())/(img.max()-img.min()) * 255
+        
+                        if crop_area is not None:
+                            crop_t, crop_l, crop_h, crop_w = crop_area
+                            img = img[crop_t:crop_h, crop_l:crop_w]
+                        
+                        cv2.imwrite(f"{dest_img_dir}/burst{int(burst[5:]):02d}_shot{int(shot.split('.')[0][4:]):03d}.png", img)
+                        
+                        img_means.append(np.mean(img))
+                        img_stds.append(np.std(img))
+    
+    overall_mean = np.mean(img_means)/255
+    overall_std =  np.sqrt(np.mean([s**2 for s in img_stds]))/255
+    
+    print("Overall Mean:", overall_mean)
+    print("Overall Std:", overall_std)
 
 def create_labels(data_dir, dataset):
 
@@ -261,25 +308,24 @@ def generate_html(data, data_dir, title='Images'):
 if __name__=='__main__':
     
     data_dir = '../data/near_field'
-    datasets = [
-        'Grating_A6',
-        'Grating_SON1',
-        'LASEROPTIK_SON1', 
-        'THALES_SESO_10000',
-        'THALES_SESO_A',
-        'LASEROPTIK',
-        'LASEROPTIK_10000'
-        ]
+    force_preprocess = True
+    
+    if not os.path.exists(data_dir + '/images') or force_preprocess:
+        crop_area = (6, 96, 486, 576) # (top, left, bottom, right)
+        process_raw_images("../data/FS_LIDT_SEPT22/Sample_NF", data_dir+'/images', crop_area)
 
-
-    for dataset in datasets:
+    # generate labels
+    for dataset in _DATASETS:
+        
         create_labels(data_dir, dataset)
 
-        train_labels, val_labels = train_val_split(data_dir, dataset)
+        # # create train and val labels
+        # train_labels, val_labels = train_val_split(data_dir, dataset, val_split=0.4)
 
-        if len(train_labels)>0:
-            all_labels_dict = [dict(img=img_label[0], label=img_label[1])  for img_label in train_labels + val_labels]
-            html_content = generate_html(all_labels_dict, 
-                data_dir="/home/ubuntu/Projects/clf-laser-damage-prediction/data/near_field/images", 
-                title=f'GT Labels - {dataset}')
-            save_file(f'../data/{dataset}_labels.html', html_content)
+        # # save class labels to html
+        # if len(train_labels)>0:
+        #     all_labels_dict = [dict(img=img_label[0], label=img_label[1])  for img_label in train_labels + val_labels]
+        #     html_content = generate_html(all_labels_dict, 
+        #         data_dir="/home/ubuntu/Projects/clf-laser-damage-prediction/data/near_field/images", 
+        #         title=f'GT Labels - {dataset}')
+        #     save_file(f'../data/{dataset}_labels.html', html_content)
