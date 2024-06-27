@@ -52,7 +52,7 @@ class MetricLogger:
         self.tn += tn  
         self.fn += fn
 
-    def update(self, y_pred, y_true):
+    def __call__(self, y_pred, y_true):
         
         self.count += 1
 
