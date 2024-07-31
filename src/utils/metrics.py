@@ -47,10 +47,10 @@ class MetricLogger:
         self.fn = 0
 
     def _update_state(self, tp, fp, tn, fn):
-        self.tp += tp
-        self.fp += fp 
-        self.tn += tn  
-        self.fn += fn
+        self.tp += tp.item()
+        self.fp += fp.item()
+        self.tn += tn.item()
+        self.fn += fn.item()
 
     def __call__(self, y_pred, y_true):
         
@@ -71,12 +71,14 @@ class MetricLogger:
         
         stats = {}
 
-        stats['tp'] = self.tp.item()
-        stats['fp'] = self.fp.item()
-        stats['tn'] = self.tn.item()
-        stats['fn'] = self.fn.item()
+        stats['tp'] = self.tp
+        stats['fp'] = self.fp
+        stats['tn'] = self.tn
+        stats['fn'] = self.fn
         stats['accuracy'] = (self.tp + self.tn) / (self.tp + self.fp + self.tn + self.fn)
-        stats['precision'] = self.tp / (self.tp + self.fn)
+        stats['precision'] = self.tp / (self.tp + self.fp + 1e-9)
+        stats['recall'] = self.tp / (self.tp + self.fn + 1e-9)
+        stats['f1'] = (2 * stats['precision'] * stats['recall']) / (stats['precision'] + stats['recall'] + 1e-9) 
 
         return stats
    
@@ -106,14 +108,3 @@ class MetricLogger:
         tabular_data = tabulate(data, headers=headers, tablefmt=tablefmt)
 
         return tabular_data
-
-            
-    
-            
-        
-                                              
-                                              
-        
-        
-    
-                

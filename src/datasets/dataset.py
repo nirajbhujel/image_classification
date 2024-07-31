@@ -26,11 +26,11 @@ from torch.utils.data import Dataset
 from torchvision import transforms as T
 import torchvision.transforms.functional as TF
 
-from datasets.preprocess import create_train_val_split
+from datasets.preprocess import create_train_val_split, load_labels
 from datasets.random_augment import RandAugment
 from datasets.random_erasing import RandomErasing
 from utils.misc import load_file, create_new_dir, listdir
-
+    
 class LaserImageDataset(Dataset):
     """Camera localization dataset.
 
@@ -38,58 +38,48 @@ class LaserImageDataset(Dataset):
     """
 
     def __init__(self, 
-                 data_cfg,
+                 cfg,
                  phase,
+                 img_labels,
                  img_transform,
-                 num_classes=1,
                  **kwargs):
         super().__init__()
-        
-        self.data_cfg = data_cfg
+        self.cfg = cfg
+        self.data_cfg = cfg.data
         self.phase = phase
-        self.num_classes=num_classes
-        self.balanced_class=kwargs.get('balanced_class', 1)
-        self.shuffle_labels = kwargs.get('shuffle_labels', 1)
-
-        self.data_dir = data_cfg.data_dir
-
-        self.img_dir = join(self.data_dir, "images")
-        self.label_dir = join(self.data_dir, "labels")
-
         self.img_transform = img_transform
-        
-        train_img_labels, val_img_labels = create_train_val_split(data_cfg.data_dir, 
-            data_cfg.datasets, data_cfg.val_split, self.balanced_class, self.shuffle_labels)
-        
-        img_labels = train_img_labels if phase=='train' else val_img_labels
-        counter_dict = collections.Counter([l[1] for l in img_labels])
+
+        self.img_dir = join(cfg.data.data_dir, "images")
+        self.label_dir = join(cfg.data.data_dir, "labels")
+
+        counter_dict = collections.Counter([np.argmax(label) for (img, label) in img_labels])
         for c, class_count in counter_dict.items():
             print(f"Class {c}: {class_count}/{len(img_labels)} {phase} samples")
-        
+
+        if cfg.train.single_batch:
+            img_labels = img_labels[:cfg.train.batch_size]
+            
         self.images = []
-        self.labels = [] 
-        self.img_files = []
+        self.labels = []
+        self.img_files =  []
         for img, label in img_labels:
-            self.labels.append(np.eye(num_classes)[int(label)])
+            self.labels.append(label)
             self.img_files.append(img)
-            if data_cfg.prefetch:
-                tmp_img = Image.open(join(self.img_dir, img))
-                self.images.append(tmp_img.copy())
-                tmp_img.close()
-                    
-                    
+            
+            if cfg.data.prefetch:
+                img = Image.open(join(self.img_dir, img))
+                self.images.append(img.copy())
+                img.close()
+   
     def __len__(self):
-        return len(self.img_files)
+        return len(self.labels)
 
     def __getitem__(self, idx):
 
-        if self.data_cfg.prefetch:
+        if self.cfg.data.prefetch:
             img = self.images[idx]
         else:
             img = Image.open(join(self.img_dir, self.img_files[idx])) 
-
-        if len(self.images)>0:
-            img = self.images[idx]
 
         img = self.img_transform(img)
         
@@ -97,10 +87,11 @@ class LaserImageDataset(Dataset):
 
         return img.to(torch.float32), label.to(torch.float32), self.img_files[idx]
     
-    def sample_batch(self, samples, batch_size):
+    def sample_batch(self, batch_size):
         print(f"Sampling {batch_size} {self.phase} images for single batch ... ")
         self.img_files = self.img_files[:batch_size]
         self.labels = self.labels[:batch_size]
+        self.images = self.images[:batch_size]
         
     
 def get_transforms(data_cfg, phase):
@@ -135,4 +126,26 @@ def get_transforms(data_cfg, phase):
     else:
         return image_transform
 
+def create_datasets(cfg, single_batch=False):
+    train_img_labels, val_img_labels = create_train_val_split(cfg.data.data_dir, cfg.data.train_datasets, cfg.data.val_split, balanced_class=True, shuffle=True)
+                                                      
+    train_dataset = LaserImageDataset(cfg,
+                                      phase='train',
+                                      img_labels = train_img_labels,
+                                      img_transform=get_transforms(cfg.data, "train"),
+                                     )
+    
+    val_dataset = LaserImageDataset(cfg,
+                                    phase='val',
+                                    img_labels=val_img_labels,
+                                    img_transform=get_transforms(cfg.data, "val"),
+                                   )
+
+
+    test_dataset = LaserImageDataset(cfg,
+                                     phase='test',
+                                     img_labels=load_labels(cfg.data.data_dir, cfg.data.test_datasets),
+                                     img_transform=get_transforms(cfg.data, "test"),
+                                    )
+    return train_dataset, val_dataset, test_dataset
     

@@ -23,7 +23,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from datasets.dataset import LaserImageDataset, get_transforms
+from datasets.dataset import LaserImageDataset, get_transforms, create_datasets
 from models.network import Network
 from models.loss import BCE_Loss
 
@@ -55,23 +55,7 @@ class Trainer:
         
         print(f"GPU: {self.device}/{world_size}, CPUs: {os.cpu_count()}")
         
-        self.train_dataset = LaserImageDataset(cfg.data,
-                                               phase='train',
-                                               img_transform=get_transforms(cfg.data, "train"),
-                                               num_classes=cfg.num_classes,
-                                               **kwargs
-                                               )
-        
-        self.test_dataset = LaserImageDataset(cfg.data,
-                                              phase='test',
-                                              img_transform=get_transforms(cfg.data, "val"),
-                                              num_classes=cfg.num_classes,
-                                              **kwargs
-                                              )
-        if cfg.train.single_batch:
-            self.train_dataset.sample_batch(cfg.train.batch_size)
-            self.test_dataset.sample_batch(cfg.train.batch_size)
-        
+        self.train_dataset, self.val_dataset, self.test_dataset = create_datasets(cfg)
             
         self.train_loader = DataLoader(self.train_dataset,
                                         batch_size=cfg.train.batch_size,
@@ -84,7 +68,15 @@ class Trainer:
                                         persistent_workers=True if cfg.train.num_workers>0 else False,
                                         drop_last=False
                                         )
-
+        
+        self.val_loader = DataLoader(self.val_dataset,
+                                        batch_size=cfg.train.batch_size,
+                                        shuffle=False,
+                                        num_workers=cfg.train.num_workers,
+                                        persistent_workers=True if cfg.train.num_workers>0 else False,
+                                        drop_last=True
+                                        )
+        
         self.test_loader = DataLoader(self.test_dataset,
                                         batch_size=cfg.train.batch_size,
                                         shuffle=False,
@@ -94,6 +86,7 @@ class Trainer:
                                         )
 
         self.logger.info(f"Train samples: {len(self.train_dataset)}, BatchSize: {self.train_loader.batch_size}, Batches: {len(self.train_loader)}")
+        self.logger.info(f"Val samples: {len(self.val_dataset)}, BatchSize: {self.val_loader.batch_size}, Batches: {len(self.val_loader)}")
         self.logger.info(f"Test samples: {len(self.test_dataset)}, BatchSize: {self.test_loader.batch_size}, Batches: {len(self.test_loader)}")
         
         if not (len(self.train_loader)>0 or len(self.test_loader)>0):
@@ -218,15 +211,17 @@ class Trainer:
                 self.train_loader.sampler.set_epoch(epoch)
 
             hist = self.train_epoch(epoch)
-
+            
             if self.rank==0:
 
                 # evaluate if eval condition reached
                 eval_condition = ((epoch+1)%cfg.train.eval_interval==0) & (epoch>cfg.optim.warmup_epochs)
                 if eval_condition:
                     self.logger.info("Evaluating")
+                    
+                    hist = self.evaluate_epoch(hist=hist, phase='val', dataloader=self.val_loader, plot=True, log_outputs=not(self.debug))
 
-                    hist = self.evaluate_epoch(hist=hist, plot=True, log_outputs=not(self.debug))
+                    hist = self.evaluate_epoch(hist=hist, phase='test', dataloader=self.test_loader, plot=True, log_outputs=not(self.debug))
 
                     self.model_checkpointer(np.mean(hist[self.model_checkpointer.monitor]))
 
@@ -237,7 +232,7 @@ class Trainer:
                 for k, v in hist.items():
                     train_hist[k].append(np.mean(v))
 
-                train_hist['eta'].append(time.time() - epoch_start)
+                train_hist['etc'].append(time.time() - epoch_start)
                 train_hist['lr'].append(float(f"{self.optimizer.param_groups[0]['lr']:.6f}"))
 
                 log_text = ', '.join([f"{k}:{str(v[-1]):.9s}" for k, v in sorted(train_hist.items())])
@@ -267,11 +262,17 @@ class Trainer:
                     self.logger.info(f"Early stopping at epoch {epoch}")
                     break
 
+        # Compute final metric 
+        self.metric_logger.compute()
+        
         # Log hyperparam at the end of training
         if (not self.debug) and self.rank==0:
 
             self.log_hparams(train_hist, epoch)
 
+            with open(self.log_dir + '/train_metric_results.json', 'w') as f:
+                json.dump(self.metric_logger.results, f)
+                
             with open(self.log_dir + '/train_hist.txt', 'w') as f:
                 json.dump(json.dump({k: str(v) for k, v in train_hist.items()}, f), f)
         
@@ -281,7 +282,7 @@ class Trainer:
                 row_header.append(k)
                 row_data.append(v[-1] if v[-1]//1==0 else np.round(v[-1], 2))
                 
-            save_to_csv(f"../logs/log_results_session{cfg.train.session}.csv", row_data, header=row_header)
+            save_to_csv(f"../logs/log_results_session{cfg.exp.session}.csv", row_data, header=row_header)
             
             self.logger.info(f"DONE in {time.time()-start}!!")
             self.tb_logger.flush()
@@ -387,7 +388,7 @@ class Trainer:
         return hist, loss
 
     
-    def evaluate_epoch(self, hist=None, plot=False, log_outputs=False):
+    def evaluate_epoch(self, dataloader, phase='val', hist=None, plot=False, log_outputs=False):
         self.network.eval()
 
         cfg = self.cfg
@@ -397,9 +398,9 @@ class Trainer:
 
         self.metric_logger.reset()
 
-        pbar = tqdm(total=len(self.test_loader), position=0)
+        pbar = tqdm(total=len(dataloader), position=0)
         with torch.no_grad():
-            for iter, batch in enumerate(self.test_loader):
+            for iter, batch in enumerate(dataloader):
                 pbar.update(1)
 
                 imgs, labels, _ = batch
@@ -410,8 +411,8 @@ class Trainer:
                 preds = self.network(imgs)
                 preds = F.softmax(preds, dim=-1)
 
-                acc = self.metric_logger.update(preds, labels)
-                hist[cfg.train.eval_metric].append(acc.detach().item())
+                acc = self.metric_logger(preds, labels)
+                hist[f"{phase}/acc"].append(acc.detach().item())
 
                 string = f"mean_accuracy:{np.mean(hist[cfg.train.eval_metric]):.3f}"
                 pbar.set_postfix_str(string)

@@ -1,3 +1,4 @@
 - net.type=PointCNN
-- train.batch_size=64
+- train.batch_size=32
+- exp.name=exp5
 - data.prefetch=1

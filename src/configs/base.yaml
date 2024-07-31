@@ -1,12 +1,8 @@
-
-seeds: 
-    - 3061994
-
 task: 'classification' # ['classification', 'detection', 'clustering']
 num_classes: 2
 
 net:
-    type: 'CNN' # ['CNN', 'PointCNN']
+    type: 'CNN' # ['MLP', 'CNN', 'PointCNN']
     hidden_dim: 512
     out_dim: 512
 
@@ -45,17 +41,19 @@ data:
 
     # data dir
     data_dir: "../data/near_field"
-    datasets: ['Grating_A6', 'Grating_SON1', 'LASEROPTIK', 'LASEROPTIK_SON1']
+    dsets: ['Grating', 'Laseroptik', 'Thales']
+    
+    train_datasets: ['Grating_A6', 'Grating_SON1', 'LASEROPTIK', 'LASEROPTIK_SON1', 'LASEROPTIK_10000', 'THALES_SESO_10000']
+    test_datasets: ['THALES_SESO_A']
     
     # train/val split
-    val_split: 0.4
+    val_split: 0.2
 
     # prefetch images -> reduce training time
     prefetch: False
     
 # dataloader
 train:
-    session: 1
     epochs: 500
     batch_size: 64
     num_workers: 1
@@ -69,7 +67,7 @@ train:
     debug: False
 
     early_stop_metric: 'val/acc' 
-    early_stop_patience: 20
+    early_stop_patience: 5
 
     eval_interval: 10
     log_interval: 100
@@ -86,10 +84,11 @@ train:
 # experiments
 exp:
     name: 'exp1'
+    session: 2
     log_dir: '../logs'
     ckpt_dir: ~
     summary_dir: ~
-    seed: ~
+    seed: 3061994
 
 hydra:  
   output_subdir: "../hydra_log/"  

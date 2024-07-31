@@ -16,6 +16,7 @@ import shutil
 import hydra
 import logging
 import traceback
+import itertools
 
 import datetime
 from omegaconf import DictConfig, OmegaConf
@@ -32,6 +33,7 @@ torch.backends.cudnn.deterministic=True
 from utils.misc import create_new_dir, copy_src
 from utils.utils import set_random_seed, model_parameters
 from trainer import Trainer
+from datasets.preprocess import DATA_SUBSETS, ALL_DATASETS
 
 def ddp_setup(rank: int, world_size: int, backend='nccl'):
     
@@ -64,14 +66,14 @@ def run(local_rank, world_size, cfg):
         print(f"DDP initialized for rank {local_rank}/{world_size}: ", torch.distributed.is_initialized())
     
     exp_name = "_".join([cfg.exp.name,
+                         # "_".join(cfg.data.test_datasets),
                          cfg.net.type,
-                         f"seed{cfg.exp.seed}",
                          f"lr{cfg.optim.lr:.4f}",
                          f"e{cfg.train.epochs}",
                          f"b{cfg.train.batch_size*world_size}",
                         ])
 
-    log_dir = f"../logs/session{cfg.train.session:03d}/{exp_name}"
+    log_dir = f"../logs/session{cfg.exp.session:03d}/{exp_name}/{"_".join(cfg.data.test_datasets)}"
     
     # Create log directories and backup src code
     if not cfg.train.debug:
@@ -109,14 +111,19 @@ def main(cfg: DictConfig) -> None:
     
     # Print current config
     print(OmegaConf.to_yaml(cfg))
-    
-    for seed in cfg.seeds:
+
+    ## Test each surface
+    # for test_dset_name in cfg.data.subsets:
+    #     cfg.data.test_datasets = DATA_SUBSETS[test_dset_name]
+    #     cfg.data.train_datasets = list(itertools.chain(*[DATA_SUBSETS[k] for k in cfg.data.subsets if k!=test_dset_name]))
+
+    # Test each dataset
+    for dset in ALL_DATASETS:
+        cfg.data.test_datasets = [dset]
+        cfg.data.train_datasets = [d for d in ALL_DATASETS if d!=dset]
         
         # Set random seed
-        set_random_seed(seed)
-        
-        # update current seed
-        cfg.exp.seed = seed
+        set_random_seed(cfg.exp.seed)
 
         if cfg.train.ddp:
 

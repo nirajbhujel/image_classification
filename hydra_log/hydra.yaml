@@ -113,12 +113,13 @@ hydra:
     - hydra.mode=RUN
     task:
     - net.type=PointCNN
-    - train.batch_size=64
+    - train.batch_size=32
+    - exp.name=exp5
     - data.prefetch=1
   job:
     name: train
     chdir: null
-    override_dirname: data.prefetch=1,net.type=PointCNN,train.batch_size=64
+    override_dirname: data.prefetch=1,exp.name=exp5,net.type=PointCNN,train.batch_size=32
     id: ???
     num: ???
     config_name: base

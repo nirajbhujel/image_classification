@@ -174,19 +174,74 @@ def create_video_from_images(image_dir, video_file_path, fps=1, display_text=Fal
         
     cv2.destroyAllWindows()
     video.release()
+
+def generate_html(data, data_dir, title='Images', save_dir=None):
+    '''
+    data: Data to visualize. List of dictionaries {img: str, label: int, pred: int, prob: float}.
+    data_dir: Absolute path of the image location to load images
+    '''
+
+    # Convert to nested dict structure
+    dataset_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    for item in data:
+        dset, loc, filename = item['img'].split('/')
+        burst = filename.split('_')[0]
+        shot = filename.split('_')[1]
+        dataset_dict[dset][loc][burst].append((shot, item))
     
-def img_gradient(x):
+    html_dict = {}
+    
+    for dset, locations in sorted(dataset_dict.items()):
+        html = ['<html>', '<head>', f'<title>{title+'_'+dset}</title>', '</head>', '<body>']
+        
+        html.append(f'<h2>Dataset: {dset}</h2>')
+        
+        for location, bursts in sorted(locations.items()):
+            html.append(f'<h3>{dset} - {location}</h3>')
+            
+            html.append('<table border="1">')
+            
+            for burst, shots in sorted(bursts.items()):
 
-    left = x
-    right = np.pad(x, ((0, 0), (0, 1)))[..., :, 1:]
-    top = x
-    bottom = np.pad(x, ((0, 1), (0, 0)))[..., 1:, :]
+                html.append('<tr>')
+                html.append(f'<td>{burst}</td>')
+                
+                html.append('<td>')
 
-    dx, dy = right - left, bottom - top 
-    # dx will always have zeros in the last column, right-left
-    # dy will always have zeros in the last row,    bottom-top
-    dx[..., :, -1] = 0
-    dy[..., -1, :] = 0
+                # show single image in td
+                for shot, item in shots:
 
-    return np.abs(dx) + np.abs(dy)
+                    color = 'black'
+                    caption = f'c={item['label']}'
+                    img_src = f'{data_dir}/{dset}/{location}/{burst}_{shot}'
+
+                    # change color if prediction available
+                    if 'pred' in item:
+                        color = 'red' if item['pred']!=item['label'] else 'green'
+                        caption += f', y={item['pred']} p={item['prob']:.2f}'
+
+                    # Construct the figure element with image and captions
+                    html.append('<figure style="display: inline-block; margin: 10px; text-align: center; font-size: 10px;">')
+                    # Image with colored border and title attributes to show information when mouse hover over image
+                    html.append(f'<img src="{img_src}" alt="{burst}_{shot}" title="{img_src}" style="width:100px;height:100px; border: 2px solid {color};"> ')
+                    # Image caption (image label)
+                    html.append(f'<figcaption style=font-style">{caption}</figcaption>')
+                    html.append('</figure>')
+        
+                html.append('</td>')
+                html.append('</tr>')
+            
+            html.append('</table>')
+
+        html.append('</body>')
+        html.append('</html>')
+
+        html_dict[dset] = '\n'.join(html)
+        
+        if save_dir is not None:
+            with open(f"{save_dir}/{dset}.html", 'w') as f:
+                f.write(html_dict[dset])
+
+    return html_dict
     

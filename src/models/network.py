@@ -10,8 +10,7 @@ import torch.nn.functional as F
 
 from models.cnn import CNN, PointCNN
 from models.fpn import FPN
-from models.modules import MLP, DetectionHead, ClusterHead
-
+from models.modules import *
         
 class Network(nn.Module):
 
@@ -19,8 +18,10 @@ class Network(nn.Module):
         super().__init__()
         self.cfg = cfg
 
-        # Create backbone        
-        if cfg.net.type=='CNN':
+        # Create backbone    
+        if cfg.net.type=='MLP':
+            self.net = make_mlp(dim_list=[cfg.data.img_height*cfg.data.img_width, cfg.net.hidden_dim, cfg.net.hidden_dim])  
+        elif cfg.net.type=='CNN':
             self.net = CNN(1, cfg.net.hidden_dim)
         elif cfg.net.type=='PointCNN':
             self.net = PointCNN(1, cfg.net.hidden_dim)
@@ -31,7 +32,7 @@ class Network(nn.Module):
 
         # Create heads
         if cfg.task=='classification':
-            self.head = MLP(cfg.net.hidden_dim, cfg.num_classes)
+            self.head = ClassificationHead(cfg.net.hidden_dim, cfg.num_classes)
         elif cfg.task=='detection':
             self.head = DetectionHead(cfg.net.hidden_dim, cfg.net.hidden_dim, cfg.num_classes)
         elif cfg.task == 'clustering':
@@ -61,12 +62,14 @@ class Network(nn.Module):
 
     def forward(self, x):
         x = self.net(x)
-
-        if self.cfg.task=='classification':
+        # print(x.shape)
+        
+        if self.cfg.net.type!='MLP':
             # perform global pooling
             x = torch.mean(x, dim=[2, 3], keepdim=False)
         
         x = self.head(x)
+        # print(x.shape)
         
         return x
 

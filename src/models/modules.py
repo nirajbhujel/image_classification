@@ -8,11 +8,24 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class MLP(nn.Module):
+def make_mlp(dim_list, activation='relu', batch_norm=False, dropout=0):
+    layers = [nn.Flatten(start_dim=1)]
+    for dim_in, dim_out in zip(dim_list[:-1], dim_list[1:]):
+        layers.append(nn.Linear(dim_in, dim_out))
+        if batch_norm:
+            layers.append(nn.BatchNorm1d(dim_out))
+        if activation == 'relu':
+            layers.append(nn.ReLU())
+        elif activation == 'leakyrelu':
+            layers.append(nn.LeakyReLU())
+        if dropout > 0:
+            layers.append(nn.Dropout(p=dropout))
+    return nn.Sequential(*layers)
+    
+class ClassificationHead(nn.Module):
     """
     Simple MLP network with dropout.
     """
-
     def __init__(self, in_channels=512, out_channels=2, act_layer=nn.ReLU, dropout=0.0, bias=True):
         super().__init__()
 
