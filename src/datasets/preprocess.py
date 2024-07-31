@@ -226,12 +226,38 @@ def load_labels(data_dir, datasets, num_classes=2):
                     onehot_label = np.eye(num_classes)[int(label)]
                     img_labels.append((img, onehot_label))
     return img_labels
+
+def balance_binary_class(cls_dict):
     
-def train_val_split(data_dir, dataset, val_split=0.3, num_classes=2, balanced_class=False, shuffle=False):
+    class_0_count, class_1_count = len(cls_dict[0]), len(cls_dict[1])
+    # print(dataset, loc, class_0_count, class_1_count)
+    np.random.seed(42)
+    # NOTE! If there is only class, it will be ignored
+    balanced_class_dict = {}
+    balanced_class_dict[0] = [cls_dict[0][idx] for idx in np.random.choice(class_0_count, size=class_1_count)]
+    balanced_class_dict[1] = [cls_dict[1][idx] for idx in np.random.choice(class_1_count, size=class_0_count)]
+    
+    return balanced_class_dict
+
+def split_labels(cls_dict, val_split, shuffle):
+    train_labels = []
+    val_labels = []
+    for c, class_labels in cls_dict.items():
+        # print(f"{dataset}/{loc}, {c=}, {len(class_labels)} images ")
+        if shuffle:
+            random.seed(42)
+            random.shuffle(class_labels)
+        train_split_indx = int(len(class_labels)*(1-val_split))
+        train_labels.extend(class_labels[:train_split_indx])
+        val_labels.extend(class_labels[train_split_indx:])
+
+    return train_labels, val_labels
+                
+def train_val_split(data_dir, dataset, val_split=0.3, balance_class=False, shuffle=True):
     
     train_labels = []
     val_labels = []
-    
+
     if os.path.exists(f"{data_dir}/labels/{dataset}"):
         print(f"Splitting labels for {dataset} ...")
 
@@ -241,41 +267,28 @@ def train_val_split(data_dir, dataset, val_split=0.3, num_classes=2, balanced_cl
             cls_dict = defaultdict(list)
             for img_label in load_file(f"{data_dir}/labels/{dataset}/{loc}"):
                 img, label = img_label.split(',')
-                onehot_label = np.eye(num_classes)[int(label)]
-                cls_dict[int(label)].append((img, onehot_label))
+                onehot_label = np.eye(2)[int(label)]
+                cls_dict[int(label)].append((img, onehot_label))            
             
             # undersample class with large samples
-            if balanced_class:
+            if balance_class:
                 # print("Addressing class imbalance ")
-                class_0_count, class_1_count = len(cls_dict[0]), len(cls_dict[1])
-                # print(dataset, loc, class_0_count, class_1_count)
-                np.random.seed(42)
-                # NOTE! If there is only class in this location, it will be ignored
-                if class_0_count > class_1_count:
-                    cls_dict[0] = [cls_dict[0][idx] for idx in np.random.choice(class_0_count, size=class_1_count)]
-                else:
-                    cls_dict[1] = [cls_dict[1][idx] for idx in np.random.choice(class_1_count, size=class_0_count)]
+                cls_dict = balance_binary_class(cls_dict)
             
             # Split each class labels into training and validation sets                           
-            for c, class_labels in cls_dict.items():
-                print(f"{dataset}/{loc}, {c=}, {len(class_labels)} images ")
-                if shuffle:
-                    random.seed(42)
-                    random.shuffle(class_labels)
-                train_split_indx = int(len(class_labels)*(1-val_split))
-                train_labels.extend(class_labels[:train_split_indx])
-                val_labels.extend(class_labels[train_split_indx:])
-
+            _train_labels, _val_labels = split_labels(cls_dict, val_split, shuffle)
+            train_labels.extend(_train_labels)
+            val_labels.extend(_val_labels)
     else:
         print(f"{data_dir}/{dataset} does not exist!!")
-
+        
     return train_labels, val_labels
 
-def create_train_val_split(data_dir, datasets, val_split=0.3, num_classes=2, balanced_class=False, shuffle=False):
+def create_train_val_split(data_dir, datasets, val_split=0.3, balance_class=False, shuffle=True):
     all_train_labels = []
     all_val_labels = []
     for dataset in datasets:
-        train_labels, val_labels = train_val_split(data_dir, dataset, val_split, num_classes, balanced_class, shuffle)
+        train_labels, val_labels = train_val_split(data_dir, dataset, val_split, balance_class, shuffle)
         all_train_labels.extend(train_labels)
         all_val_labels.extend(val_labels)
     return all_train_labels, all_val_labels

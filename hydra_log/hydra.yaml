@@ -114,12 +114,13 @@ hydra:
     task:
     - net.type=PointCNN
     - train.batch_size=32
-    - exp.name=exp5
+    - exp.name=exp7_weighted_bce
     - data.prefetch=1
+    - data.balance_class=0
   job:
     name: train
     chdir: null
-    override_dirname: data.prefetch=1,exp.name=exp5,net.type=PointCNN,train.batch_size=32
+    override_dirname: data.balance_class=0,data.prefetch=1,exp.name=exp7_weighted_bce,net.type=PointCNN,train.batch_size=32
     id: ???
     num: ???
     config_name: base

@@ -150,8 +150,7 @@ class Trainer:
                                             debug=self.debug
                                             )
 
-        if cfg.loss.bce_loss.weight>0:
-            self.bce_loss = BCE_Loss()
+        self.bce_loss = BCE_Loss()
 
         if cfg.task=='classification':
             self.metric_logger = MetricLogger(name='binary_accuracy')
@@ -375,10 +374,10 @@ class Trainer:
         preds = self.network(imgs)
 
         loss = 0
-        if cfg.loss.bce_loss.weight>0:
-            bce_loss = self.bce_loss.compute(labels, preds)
-            hist['train/bce_loss'].append(bce_loss.detach().item())
-            loss += bce_loss
+
+        bce_loss = self.bce_loss(labels, preds)
+        hist['train/bce_loss'].append(bce_loss.detach().item())
+        loss += bce_loss
 
         hist['train/loss'].append(loss.detach().item())
 

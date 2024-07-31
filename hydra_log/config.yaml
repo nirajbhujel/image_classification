@@ -30,20 +30,19 @@ data:
   aug_photo: 0.0
   aug_geome: 0.5
   data_dir: ../data/near_field
-  dsets:
-  - Grating
-  - Laseroptik
-  - Thales
-  train_datasets:
+  train_datasets: []
+  test_datasets:
   - Grating_A6
   - Grating_SON1
   - LASEROPTIK
   - LASEROPTIK_SON1
   - LASEROPTIK_10000
   - THALES_SESO_10000
-  test_datasets:
-  - THALES_SESO_A
   val_split: 0.2
+  balance_class: 0
+  class_weights:
+  - 0.2185
+  - 0.7815
   prefetch: 1
 train:
   epochs: 500
@@ -66,7 +65,7 @@ train:
   reset_head_steps: null
   network_in: null
 exp:
-  name: exp5
+  name: exp7_weighted_bce
   session: 2
   log_dir: ../logs
   ckpt_dir: null

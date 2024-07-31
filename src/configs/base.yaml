@@ -36,19 +36,23 @@ data:
     n_channels: 1
     
     # augmentation
-    aug_photo: 0.0
+    aug_photo: 0.5
     aug_geome: 0.5
 
     # data dir
     data_dir: "../data/near_field"
-    dsets: ['Grating', 'Laseroptik', 'Thales']
+    # dsets: ['Grating', 'Laseroptik', 'Thales']
     
-    train_datasets: ['Grating_A6', 'Grating_SON1', 'LASEROPTIK', 'LASEROPTIK_SON1', 'LASEROPTIK_10000', 'THALES_SESO_10000']
-    test_datasets: ['THALES_SESO_A']
+    train_datasets: [] # set in train.py
+    test_datasets: ['Grating_A6', 'Grating_SON1', 'LASEROPTIK', 'LASEROPTIK_SON1', 'LASEROPTIK_10000', 'THALES_SESO_10000']
     
     # train/val split
     val_split: 0.2
 
+    # class balance
+    balance_class: True
+    class_weights: [0.2185, 0.7815]
+    
     # prefetch images -> reduce training time
     prefetch: False
     
@@ -73,7 +77,7 @@ train:
     log_interval: 100
     n_images: 20
     
-    eval_metric: 'val/acc'
+    eval_metric: 'test/acc'
     
     train_skip_frames: 1
     test_skip_frames: 1
