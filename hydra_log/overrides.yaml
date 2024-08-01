@@ -1,5 +1,0 @@
-- net.type=PointCNN
-- train.batch_size=32
-- exp.name=exp7_weighted_bce
-- data.prefetch=1
-- data.balance_class=0

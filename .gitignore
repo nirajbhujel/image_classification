@@ -27,9 +27,10 @@ rough*
 # logs
 log/
 logs/
+hydra_log/
 *.log
 
 # dirs
 old_model/
 docs/
-hydra_log/
+

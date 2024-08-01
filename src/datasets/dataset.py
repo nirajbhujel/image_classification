@@ -127,10 +127,12 @@ def get_transforms(data_cfg, phase):
         return image_transform
 
 def create_datasets(cfg, single_batch=False):
-    train_img_labels, val_img_labels = create_train_val_split(cfg.data.data_dir, cfg.data.train_datasets, 
-                                                              val_split=cfg.data.val_split, 
-                                                              balance_class=cfg.data.balance_class, 
-                                                              shuffle=True)
+    train_img_labels, val_img_labels = create_train_val_split(cfg.data.data_dir, 
+                                                            datasets=cfg.data.train_datasets, 
+                                                            val_split=cfg.data.val_split, 
+                                                            balance_class=cfg.data.balance_class, 
+                                                            shuffle=True
+                                                            )
                                                       
     train_dataset = LaserImageDataset(cfg,
                                       phase='train',

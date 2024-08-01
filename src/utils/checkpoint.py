@@ -9,7 +9,9 @@ import torch
 
 class ModelCheckpoint:
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, model, ckpt_dir, ckpt_name = None, monitor = None, mode='min', trace_func=print, verbose=True, debug=False):
+    def __init__(self, model, ckpt_dir, ckpt_name = None, monitor = None, mode='min', 
+        trace_func=print, verbose=True, debug=False, logger=None):
+        self.model = model
         self.ckpt_dir = ckpt_dir
         self.ckpt_name = (ckpt_name or f"best_{monitor}")
         self.monitor = monitor
@@ -20,8 +22,7 @@ class ModelCheckpoint:
         self.delta = 1e-6
         self.trace_func = trace_func
         self.debug = debug
-        self.model = model
-        
+
     def __call__(self, metric_val, epoch=None):
 
         current_val = metric_val
@@ -46,7 +47,7 @@ class ModelCheckpoint:
         
         if not self.debug:
             save_path = os.path.join(self.ckpt_dir, self.ckpt_name + '.pth')
-            print("Saving model checkpoint ... ")
+            self.trace_func("Saving model checkpoint ... ")
             try:
                 torch.save(self.model.module.state_dict(), save_path)
             except:

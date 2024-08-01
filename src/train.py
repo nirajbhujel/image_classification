@@ -97,6 +97,7 @@ def run(local_rank, world_size, cfg):
     
     if local_rank==0:        
         trainer.logger.info(f"Running Experiment: {exp_name}")
+        trainer.logger.info(f"Result will be logged in : {log_dir}")
         trainer.logger.info(trainer.network)
         trainer.logger.info(f"Training parameters: {model_parameters(trainer.network)} (backbone:{model_parameters(trainer.network.net)},  heads: {model_parameters(trainer.network.head)})")
         
@@ -118,7 +119,8 @@ def main(cfg: DictConfig) -> None:
     #     cfg.data.train_datasets = list(itertools.chain(*[DATA_SUBSETS[k] for k in cfg.data.subsets if k!=test_dset_name]))
 
     # Test each dataset
-    for dset in ALL_DATASETS:
+    # for dset in ALL_DATASETS:
+    for dset in ['LASEROPTIK', 'LASEROPTIK_SON1', 'LASEROPTIK_10000', 'THALES_SESO_10000']:
         cfg.data.test_datasets = [dset]
         cfg.data.train_datasets = [d for d in ALL_DATASETS if d!=dset]
         

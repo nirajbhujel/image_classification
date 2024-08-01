@@ -147,7 +147,7 @@ class Trainer:
                                             monitor=cfg.train.eval_metric,
                                             mode='max',
                                             trace_func=self.logger.info,
-                                            debug=self.debug
+                                            debug=self.debug,
                                             )
 
         self.bce_loss = BCE_Loss()

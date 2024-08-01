@@ -234,8 +234,10 @@ def balance_binary_class(cls_dict):
     np.random.seed(42)
     # NOTE! If there is only class, it will be ignored
     balanced_class_dict = {}
-    balanced_class_dict[0] = [cls_dict[0][idx] for idx in np.random.choice(class_0_count, size=class_1_count)]
-    balanced_class_dict[1] = [cls_dict[1][idx] for idx in np.random.choice(class_1_count, size=class_0_count)]
+    if class_0_count > class_1_count:
+        balanced_class_dict[0] = [cls_dict[0][idx] for idx in np.random.choice(class_0_count, size=class_1_count)]
+    else:
+        balanced_class_dict[1] = [cls_dict[1][idx] for idx in np.random.choice(class_1_count, size=class_0_count)]
     
     return balanced_class_dict
 

@@ -44,14 +44,14 @@ data:
     # dsets: ['Grating', 'Laseroptik', 'Thales']
     
     train_datasets: [] # set in train.py
-    test_datasets: ['Grating_A6', 'Grating_SON1', 'LASEROPTIK', 'LASEROPTIK_SON1', 'LASEROPTIK_10000', 'THALES_SESO_10000']
+    test_datasets: [] # set in train.py
     
     # train/val split
     val_split: 0.2
 
     # class balance
     balance_class: True
-    class_weights: [0.2185, 0.7815]
+    class_weights: [0.2185, 0.7815] # weight for class 0 and 1
     
     # prefetch images -> reduce training time
     prefetch: False

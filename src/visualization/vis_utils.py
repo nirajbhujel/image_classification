@@ -245,3 +245,20 @@ def generate_html(data, data_dir, title='Images', save_dir=None):
 
     return html_dict
     
+def plot_damaged_dets(y_true, y_preds, title='', figsize=(8,5), fontsize=10):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+    ax.plot(y_true, color='b', label='GT')
+    ax.plot(y_preds, color='r', label='Pred')
+    
+    # Set ticks and labels
+    ax.set_yticks([0, 0.5, 1], ['Undamaged', '0.5', 'Damaged'], fontsize=fontsize)
+    ax.set_ylim(-0.1, 1.1)  # Extend y-axis slightly for better visibility
+    ax.set_xlabel('Frames', fontsize=fontsize)
+
+    # Set title
+    ax.set_title(title, fontsize=fontsize)
+
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(fontsize=fontsize)
+
+    return fig, ax
